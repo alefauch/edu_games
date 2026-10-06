@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Le Tour du Monde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="assets/style.css">
+  <style>
+    .hero { text-align: center; padding: 18px 8px 8px; }
+    .hero .globe { font-size: 4rem; line-height: 1; animation: spin 6s ease-in-out infinite alternate; display: inline-block; }
+    .hero h1 { margin: 8px 0 4px; font-size: clamp(1.8rem, 7vw, 2.6rem); }
+    .hero p { color: var(--muted); margin: 0; }
+    .games { display: grid; gap: 14px; margin-top: 18px; }
+    @media (min-width: 620px) { .games { grid-template-columns: 1fr 1fr; } }
+    .game-card {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      text-decoration: none;
+      color: inherit;
+      background: var(--card);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      border: 3px solid transparent;
+      transition: transform 0.1s, border-color 0.15s;
+    }
+    .game-card:hover { border-color: #b9c4ff; transform: translateY(-2px); }
+    .game-card:active { transform: translateY(1px); }
+    .game-icon {
+      font-size: 2.4rem;
+      width: 64px;
+      height: 64px;
+      flex: none;
+      border-radius: 16px;
+      display: grid;
+      place-items: center;
+    }
+    .game-card h2 { margin: 0 0 2px; font-size: 1.25rem; }
+    .game-card p { margin: 0; color: var(--muted); font-size: 0.95rem; line-height: 1.3; }
+    .game-card .rec { color: #b07a00; font-weight: 600; font-size: 0.85rem; margin-top: 4px; min-height: 1em; }
+    .num { color: var(--primary); }
+    @keyframes spin { from { transform: rotate(-12deg); } to { transform: rotate(12deg); } }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <div class="globe">🌍</div>
+      <h1>Le Tour du Monde</h1>
+      <p>Apprends les pays, les capitales et les drapeaux en t’amusant !</p>
+    </header>
+
+    <nav class="games">
+      <a class="game-card" href="jeu1-capitales.html">
+        <div class="game-icon" style="background:#e8ecff">🏛️</div>
+        <div>
+          <h2><span class="num">1.</span> Trouve la capitale</h2>
+          <p>Un pays, trois capitales : laquelle est la bonne ?</p>
+          <div class="rec" data-rec="jeu1"></div>
+        </div>
+      </a>
+      <a class="game-card" href="jeu2-pays.html">
+        <div class="game-icon" style="background:#e5f8ee">🗺️</div>
+        <div>
+          <h2><span class="num">2.</span> Trouve le pays</h2>
+          <p>Une capitale, trois pays : à toi de jouer !</p>
+          <div class="rec" data-rec="jeu2"></div>
+        </div>
+      </a>
+      <a class="game-card" href="jeu3-course.html">
+        <div class="game-icon" style="background:#ffe9dc">🏃‍♀️</div>
+        <div>
+          <h2><span class="num">3.</span> La course des capitales</h2>
+          <p>Cours dans le couloir du bon pays… sans tomber !</p>
+          <div class="rec" data-rec="jeu3" data-unit="m"></div>
+        </div>
+      </a>
+      <a class="game-card" href="jeu4-drapeaux.html">
+        <div class="game-icon" style="background:#ffe5ec">🚩</div>
+        <div>
+          <h2><span class="num">4.</span> Quel est ce drapeau&nbsp;?</h2>
+          <p>Reconnais le pays à partir de son drapeau.</p>
+          <div class="rec" data-rec="jeu4" data-levels="1"></div>
+        </div>
+      </a>
+      <a class="game-card" href="jeu5-trouve-le-drapeau.html">
+        <div class="game-icon" style="background:#f3e8ff">🎌</div>
+        <div>
+          <h2><span class="num">5.</span> Trouve le drapeau</h2>
+          <p>Un pays : touche le bon drapeau parmi plusieurs.</p>
+          <div class="rec" data-rec="jeu5" data-levels="1"></div>
+        </div>
+      </a>
+    </nav>
+  </main>
+
+  <script src="assets/data.js"></script>
+  <script src="assets/common.js"></script>
+  <script>
+    // Affiche les records enregistrés sur cet appareil.
+    const LEVEL_NAMES = { facile: 'Facile', moyen: 'Moyen', difficile: 'Difficile' };
+    document.querySelectorAll('[data-rec]').forEach((el) => {
+      const id = el.dataset.rec;
+      if (el.dataset.levels) {
+        const parts = Object.keys(LEVEL_NAMES)
+          .map((k) => [LEVEL_NAMES[k], Game.store.get('best:' + id + ':' + k, 0)])
+          .filter(([, v]) => v > 0)
+          .map(([name, v]) => name + ' ' + v);
+        el.textContent = parts.length ? '🏆 ' + parts.join(' · ') : '';
+      } else {
+        const v = Game.store.get('best:' + id, 0);
+        el.textContent = v ? '🏆 Record : ' + v + ' ' + (el.dataset.unit || 'pts') : '';
+      }
+    });
+  </script>
+</body>
+</html>

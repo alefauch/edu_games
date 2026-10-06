@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Trouve le pays</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="index.html">← Menu</a>
+    <h1>🗺️ Trouve le pays</h1>
+    <button class="icon-btn" id="mute"></button>
+  </header>
+  <main id="app"></main>
+
+  <script src="assets/data.js"></script>
+  <script src="assets/common.js"></script>
+  <script>
+    let getRegions, pool, pick;
+
+    Game.TimedQuiz({
+      gameId: 'jeu2',
+      emoji: '🗺️',
+      title: 'Trouve le pays',
+      rules: 'Une capitale s’affiche : choisis son pays parmi 3 réponses.<br>' +
+        'Bonne réponse = points du combo (1, 2, 3…). Erreur = -1 point et le combo repart à zéro.<br>' +
+        'Tu as <b>1 minute</b> !',
+      duration: 60,
+      renderSettings(el) { getRegions = Game.regionPicker(el); },
+      prepare() {
+        pool = Data.capitalPool(getRegions());
+        if (pool.length < 3) return 'Choisis au moins un continent !';
+        pick = Game.makePicker(pool);
+      },
+      ask(stage, done) {
+        const c = pick();
+        const options = Game.shuffle([c, ...Game.pickDistractors(c, pool, 2, (x) => x.name)]);
+        stage.innerHTML = `
+          <div class="prompt-label">C’est la capitale de quel pays ?</div>
+          <div class="question">${Game.esc(c.capital)}</div>
+          <div class="region-tag">${Data.regionEmoji(c.region)} ${c.region}</div>`;
+        Game.renderChoices(stage, options, options.indexOf(c), (x) => Game.esc(x.name),
+          (ok) => done(ok, { left: Game.esc(c.capital), right: Game.esc(c.name) }));
+      },
+    });
+  </script>
+</body>
+</html>

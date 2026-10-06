@@ -1,0 +1,166 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Quel est ce drapeau ?</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="index.html">← Menu</a>
+    <h1>🚩 Quel est ce drapeau ?</h1>
+    <button class="icon-btn" id="mute"></button>
+  </header>
+  <main id="app"></main>
+
+  <script src="assets/data.js"></script>
+  <script src="assets/common.js"></script>
+  <script>
+    const { esc, norm } = Game;
+    const LEVELS = [
+      { key: 'facile', label: 'Facile', help: '3 pays au choix', choices: 3 },
+      { key: 'moyen', label: 'Moyen', help: '8 pays au choix', choices: 8 },
+      { key: 'difficile', label: 'Difficile', help: 'Écris le nom du pays', choices: 0 },
+    ];
+    const allFlags = Data.flagPool();
+    const names = Data.COUNTRIES.map((c) => c.name).sort((a, b) => a.localeCompare(b, 'fr'));
+    let getRegions, getLevel, pool, pick;
+
+    const flagImg = (c) => `<img src="${Data.flagSrc(c)}" alt="Drapeau à deviner">`;
+    const miniFlag = (c) => `<img class="mini-flag" src="${Data.flagSrc(c)}" alt="">`;
+
+    // Retrouve un pays à partir du texte tapé (accents et majuscules ignorés).
+    function findCountry(text) {
+      const t = norm(text);
+      if (!t) return null;
+      return Data.COUNTRIES.find((c) => norm(c.name) === t || (Data.ALIASES[c.code] || []).some((a) => norm(a) === t)) || null;
+    }
+
+    function suggestions(text) {
+      const t = norm(text);
+      if (!t) return [];
+      const starts = names.filter((n) => norm(n).startsWith(t));
+      const inside = names.filter((n) => !starts.includes(n) && norm(n).split(' ').some((w) => w.startsWith(t)));
+      return starts.concat(inside).slice(0, 6);
+    }
+
+    // Mode difficile : un champ de saisie avec autocomplétion.
+    // On réutilise le même champ d'une question à l'autre pour garder le clavier ouvert sur mobile.
+    function askTyped(stage, c, done) {
+      if (!stage.querySelector('.ac')) {
+        stage.innerHTML = `
+          <div class="prompt-label">De quel pays est ce drapeau ?</div>
+          <div class="flag-big"></div>
+          <div class="ac">
+            <input type="text" autocomplete="off" autocorrect="off" autocapitalize="words" spellcheck="false"
+                   enterkeyhint="done" placeholder="Écris le nom du pays…" aria-label="Nom du pays">
+            <ul class="ac-list" role="listbox"></ul>
+          </div>
+          <div class="answer-reveal"></div>
+          <div class="btn-row">
+            <button class="btn primary" data-act="ok">Valider</button>
+            <button class="btn ghost" data-act="skip">Je ne sais pas</button>
+          </div>`;
+      }
+      const input = stage.querySelector('input');
+      const list = stage.querySelector('.ac-list');
+      const reveal = stage.querySelector('.answer-reveal');
+      stage.querySelector('.flag-big').innerHTML = flagImg(c);
+      input.value = '';
+      input.className = '';
+      input.disabled = false;
+      reveal.textContent = '';
+      reveal.className = 'answer-reveal';
+      list.innerHTML = '';
+      let active = -1;
+      let finished = false;
+
+      const paintList = () => {
+        const items = suggestions(input.value);
+        if (items.length === 1 && norm(items[0]) === norm(input.value)) items.length = 0;
+        active = Math.min(active, items.length - 1);
+        list.innerHTML = items.map((n, i) => `<li role="option" class="${i === active ? 'active' : ''}">${esc(n)}</li>`).join('');
+        list.querySelectorAll('li').forEach((li, i) => {
+          // pointerdown plutôt que click : le champ ne perd pas le focus avant la sélection.
+          li.onpointerdown = (e) => { e.preventDefault(); submit(items[i]); };
+        });
+      };
+
+      function submit(text) {
+        if (finished) return;
+        const guess = findCountry(text);
+        if (!guess) {
+          // Nom inconnu : pas de pénalité, on demande de réessayer.
+          input.classList.remove('bad');
+          void input.offsetWidth;
+          input.classList.add('bad');
+          reveal.className = 'answer-reveal bad';
+          reveal.textContent = text.trim() ? 'Je ne connais pas ce pays, choisis dans la liste 😉' : '';
+          return;
+        }
+        finish(guess === c);
+      }
+
+      function finish(ok) {
+        finished = true;
+        list.innerHTML = '';
+        input.disabled = true;
+        input.className = ok ? 'good' : 'bad';
+        reveal.className = 'answer-reveal ' + (ok ? 'good' : 'bad');
+        reveal.innerHTML = ok ? '✅ Bravo, c’est ' + esc(c.name) + ' !' : '❌ C’était : ' + esc(c.name);
+        done(ok, { left: miniFlag(c), right: esc(c.name) });
+      }
+
+      input.oninput = () => { active = -1; reveal.textContent = ''; input.classList.remove('bad'); paintList(); };
+      input.onkeydown = (e) => {
+        const n = list.children.length;
+        if (e.key === 'ArrowDown' && n) { active = (active + 1) % n; paintList(); e.preventDefault(); }
+        else if (e.key === 'ArrowUp' && n) { active = (active - 1 + n) % n; paintList(); e.preventDefault(); }
+        else if (e.key === 'Enter') {
+          e.preventDefault();
+          submit(active >= 0 ? list.children[active].textContent : input.value);
+        }
+      };
+      stage.querySelector('[data-act=ok]').onclick = () => submit(input.value);
+      stage.querySelector('[data-act=skip]').onclick = () => { if (!finished) finish(false); };
+      setTimeout(() => input.focus(), 50);
+    }
+
+    Game.TimedQuiz({
+      gameId: 'jeu4',
+      emoji: '🚩',
+      title: 'Quel est ce drapeau ?',
+      rules: 'Un drapeau s’affiche : trouve le pays !<br>' +
+        'Bonne réponse = points du combo (1, 2, 3…). Erreur = -1 point et le combo repart à zéro.<br>' +
+        'Tu as <b>1 minute</b> !',
+      duration: 60,
+      renderSettings(el, refreshBest) {
+        getRegions = Game.regionPicker(el, Data.FLAG_REGIONS, 'regions:flags');
+        getLevel = Game.segmented(el, LEVELS, 'level:jeu4', refreshBest);
+      },
+      modeKey: () => getLevel(),
+      prepare() {
+        pool = Data.flagPool(getRegions());
+        if (!pool.length) return 'Choisis au moins un continent !';
+        pick = Game.makePicker(pool);
+        Game.preloadFlags(pool);
+      },
+      ask(stage, done) {
+        const c = pick();
+        const level = LEVELS.find((l) => l.key === getLevel());
+        if (!level.choices) return askTyped(stage, c, done);
+        const options = Game.shuffle([c, ...Game.pickDistractors(c, pool, level.choices - 1, null, allFlags)]);
+        stage.innerHTML = `
+          <div class="prompt-label">De quel pays est ce drapeau ?</div>
+          <div class="flag-big">${flagImg(c)}</div>`;
+        Game.renderChoices(stage, options, options.indexOf(c), (x) => esc(x.name),
+          (ok) => done(ok, { left: miniFlag(c), right: esc(c.name) }),
+          level.choices > 3 ? 'two-cols' : '');
+      },
+    });
+  </script>
+</body>
+</html>

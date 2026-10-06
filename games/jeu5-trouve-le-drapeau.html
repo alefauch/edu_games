@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Trouve le drapeau</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="index.html">← Menu</a>
+    <h1>🎌 Trouve le drapeau</h1>
+    <button class="icon-btn" id="mute"></button>
+  </header>
+  <main id="app"></main>
+
+  <script src="assets/data.js"></script>
+  <script src="assets/common.js"></script>
+  <script>
+    const { esc } = Game;
+    const LEVELS = [
+      { key: 'facile', label: 'Facile', help: '3 drapeaux au choix', choices: 3 },
+      { key: 'moyen', label: 'Moyen', help: '8 drapeaux au choix', choices: 8 },
+      { key: 'difficile', label: 'Difficile', help: '20 drapeaux au choix', choices: 20 },
+    ];
+    const allFlags = Data.flagPool();
+    let getRegions, getLevel, pool, pick;
+
+    Game.TimedQuiz({
+      gameId: 'jeu5',
+      emoji: '🎌',
+      title: 'Trouve le drapeau',
+      rules: 'Un pays s’affiche : touche son drapeau !<br>' +
+        'Bonne réponse = points du combo (1, 2, 3…). Erreur = -1 point et le combo repart à zéro.<br>' +
+        'Tu as <b>1 minute</b> !',
+      duration: 60,
+      renderSettings(el, refreshBest) {
+        getRegions = Game.regionPicker(el, Data.FLAG_REGIONS, 'regions:flags');
+        getLevel = Game.segmented(el, LEVELS, 'level:jeu5', refreshBest);
+      },
+      modeKey: () => getLevel(),
+      prepare() {
+        pool = Data.flagPool(getRegions());
+        if (!pool.length) return 'Choisis au moins un continent !';
+        pick = Game.makePicker(pool);
+        Game.preloadFlags(pool);
+      },
+      ask(stage, done) {
+        const c = pick();
+        const n = LEVELS.find((l) => l.key === getLevel()).choices;
+        const options = Game.shuffle([c, ...Game.pickDistractors(c, pool, n - 1, null, allFlags)]);
+        stage.innerHTML = `
+          <div class="prompt-label">Quel est le drapeau de ce pays ?</div>
+          <div class="question">${esc(c.name)}</div>
+          <div class="region-tag">${Data.regionEmoji(c.region)} ${c.region}</div>`;
+        const grid = Game.renderChoices(stage, options, options.indexOf(c),
+          (x) => `<img src="${Data.flagSrc(x)}" alt="Drapeau">`,
+          (ok) => {
+            // Si c'est faux, on écrit le nom du pays sur le drapeau choisi.
+            grid.querySelectorAll('.choice.bad').forEach((b) => {
+              const i = [...grid.children].indexOf(b);
+              b.insertAdjacentHTML('beforeend', `<span class="flag-name">${esc(options[i].name)}</span>`);
+            });
+            done(ok, { left: esc(c.name), right: `<img class="mini-flag" src="${Data.flagSrc(c)}" alt="">` });
+          });
+        grid.classList.add('flag-grid', 'n' + n);
+        grid.querySelectorAll('.choice').forEach((b) => b.classList.add('flag-choice'));
+      },
+    });
+  </script>
+</body>
+</html>
