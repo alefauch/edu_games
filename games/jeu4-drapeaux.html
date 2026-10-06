@@ -101,16 +101,19 @@
           reveal.textContent = text.trim() ? 'Je ne connais pas ce pays, choisis dans la liste 😉' : '';
           return;
         }
-        finish(guess === c);
+        finish(Data.sameFlag(guess, c), guess);
       }
 
-      function finish(ok) {
+      function finish(ok, guess) {
         finished = true;
         list.innerHTML = '';
         input.disabled = true;
         input.className = ok ? 'good' : 'bad';
         reveal.className = 'answer-reveal ' + (ok ? 'good' : 'bad');
-        reveal.innerHTML = ok ? '✅ Bravo, c’est ' + esc(c.name) + ' !' : '❌ C’était : ' + esc(c.name);
+        reveal.innerHTML = !ok ? '❌ C’était : ' + esc(c.name)
+          : guess && guess !== c
+            ? '✅ Bravo ! C’était ' + esc(c.name) + ', qui a presque le même drapeau que ' + esc(guess.name) + '.'
+            : '✅ Bravo, c’est ' + esc(c.name) + ' !';
         done(ok, { left: miniFlag(c), right: esc(c.name) });
       }
 

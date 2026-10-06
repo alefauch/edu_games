@@ -153,7 +153,15 @@
   ];
 
   // Drapeaux presque identiques : ne jamais les proposer ensemble.
-  const LOOKALIKES = [['mc', 'id']];
+  const LOOKALIKES = [
+    ['mc', 'id'], // Monaco / Indonésie
+    ['nl', 'lu'], // Pays-Bas / Luxembourg
+    ['au', 'nz'], // Australie / Nouvelle-Zélande
+    ['at', 'lv'], // Autriche / Lettonie
+  ];
+
+  // Drapeaux impossibles à distinguer : l'un ou l'autre nom est accepté.
+  const IDENTICAL = [['mc', 'id']];
 
   // Autres façons d'écrire un pays (mode difficile du jeu des drapeaux).
   const ALIASES = {
@@ -178,6 +186,7 @@
       (!regions || regions.includes(c.region))),
     flagSrc: (c) => 'flags/' + c.code + '.svg',
     areLookalikes: (a, b) => LOOKALIKES.some((p) => p.includes(a.code) && p.includes(b.code)),
+    sameFlag: (a, b) => a === b || IDENTICAL.some((p) => p.includes(a.code) && p.includes(b.code)),
     regionEmoji: (r) => (FLAG_REGIONS.find((x) => x.key === r) || { emoji: '🌏' }).emoji,
   };
 })();
