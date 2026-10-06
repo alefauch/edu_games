@@ -46,23 +46,6 @@
       cursor: pointer;
     }
     .track-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-    .lane-btns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 0 7%; }
-    .lane-btn {
-      border: 0;
-      border-radius: 12px;
-      color: #fff;
-      font-weight: 700;
-      font-size: 1.5rem;
-      min-height: 48px;
-      padding: 4px;
-      cursor: pointer;
-      opacity: 0.75;
-      box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
-      word-break: break-word;
-      line-height: 1.1;
-    }
-    .lane-btn.on { opacity: 1; outline: 4px solid #ffd23f; outline-offset: -4px; }
-    .lane-btn:active { transform: translateY(2px); }
     .fail-msg { font-size: 1.15rem; margin: 14px 0 0; }
     @media (min-width: 760px) {
       .run-body { grid-template-columns: 1fr 170px; grid-template-rows: 1fr; }
@@ -95,7 +78,7 @@
     const MAX_SPEED = 20;
     const VIEW_METERS = 40;      // hauteur de piste visible à l'écran
     const RUNNER_Y = 0.8;        // position verticale de la coureuse (fraction de la hauteur)
-    const GRASS = 0.07;          // bande d'herbe de chaque côté (doit correspondre au padding des boutons)
+    const GRASS = 0.07;          // bande d'herbe de chaque côté
     const LANE_COLORS = ['#4f6bff', '#9b5de5', '#ff7b00'];
 
     let getRegions, pool, pick;
@@ -140,7 +123,6 @@
             </aside>
             <div class="track-col">
               <div class="track-wrap" id="track"><canvas id="cv"></canvas></div>
-              <div class="lane-btns" id="lanes"></div>
             </div>
           </div>
         </section>`;
@@ -158,16 +140,6 @@
         flash: null,
       };
 
-      const lanes = $('#lanes');
-      for (let i = 0; i < 3; i++) {
-        const b = document.createElement('button');
-        b.className = 'lane-btn';
-        b.style.background = LANE_COLORS[i];
-        b.onpointerdown = (e) => { e.preventDefault(); setLane(i); };
-        b.setAttribute('aria-label', 'Couloir ' + (i + 1));
-        lanes.appendChild(b);
-      }
-      paintLaneButtons();
       $('#track').onpointerdown = (e) => {
         const r = cv.getBoundingClientRect();
         const trackX = r.width * GRASS, laneW = (r.width * (1 - 2 * GRASS)) / 3;
@@ -214,14 +186,6 @@
     function setLane(i) {
       if (!S || (S.phase !== 'run' && S.phase !== 'countdown')) return;
       S.lane = i;
-      paintLaneButtons();
-    }
-
-    function paintLaneButtons() {
-      [...$('#lanes').children].forEach((b, i) => {
-        b.classList.toggle('on', i === S.lane);
-        b.textContent = i === S.lane ? '🏃‍♀️' : '';
-      });
     }
 
     document.addEventListener('keydown', (e) => {
@@ -402,17 +366,16 @@
       }
     }
 
-    // Une porte = ligne d'arrivée + un panneau par couloir avec le nom du pays.
+    // Une porte = un panneau par couloir avec le nom du pays ; la réponse est vérifiée au bas des panneaux.
     function drawGate(g, y, trackX, laneW, passed) {
       if (y < -80 || y > H + 80) return;
-      drawCheckered(trackX, y, laneW * 3, 10);
       const boxH = Math.max(42, Math.min(70, H * 0.1));
       for (let i = 0; i < 3; i++) {
         let color = LANE_COLORS[i];
         if (passed) color = i === g.correct ? '#1fb36b' : (i === g.chosen ? '#ec4747' : '#9aa0b8');
         const x = trackX + i * laneW + 4;
         const w = laneW - 8;
-        const top = y - 12 - boxH;
+        const top = y - boxH;
         roundRect(x, top, w, boxH, 8);
         ctx.fillStyle = color;
         ctx.fill();
