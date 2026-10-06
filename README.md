@@ -11,7 +11,7 @@ Ils sont pensés pour un enfant d'environ 8 ans et se jouent aussi bien sur ordi
 | --- | --- |
 | 🏛️ **1. Trouve la capitale** | Un pays s'affiche : choisis sa capitale parmi 3 réponses. |
 | 🗺️ **2. Trouve le pays** | Une capitale s'affiche : choisis son pays parmi 3 réponses. |
-| 🏃‍♀️ **3. La course des capitales** | Une capitale s'affiche et chaque couloir de la piste porte un nom de pays. Place la coureuse dans le bon couloir avant la haie : elle accélère à chaque bonne réponse et tombe à la première erreur. ⚡ **Sprint** : toucher le nom d'un pays en haut de l'écran (ou flèche ↑) fait foncer la coureuse jusqu'à la haie ; si c'est la bonne réponse, elle gagne des points bonus (plus le sprint est lancé tôt, plus il rapporte). Le score est la distance parcourue plus les bonus. |
+| 🏃‍♀️ **3. La course des capitales** | Une capitale s'affiche et chaque couloir de la piste porte un nom de pays. Place la coureuse dans le bon couloir avant la haie : elle accélère à chaque bonne réponse et tombe à la première erreur. ⚡ **Sprint** : appui long sur un couloir, toucher le nom d'un pays en haut de l'écran (ou flèche ↑) fait foncer la coureuse jusqu'à la haie ; si c'est la bonne réponse, elle gagne des points bonus (plus le sprint est lancé tôt, plus il rapporte). Le score est la distance parcourue plus les bonus. |
 | 🚩 **4. Quel est ce drapeau ?** | Un drapeau s'affiche : trouve le pays. *Facile* : 3 choix · *Moyen* : 8 choix · *Difficile* : écrire le nom (avec autocomplétion). |
 | 🎌 **5. Trouve le drapeau** | Un pays s'affiche : touche son drapeau. *Facile* : 3 drapeaux · *Moyen* : 8 · *Difficile* : 20. |
 

@@ -43,6 +43,9 @@
       overflow: hidden;
       box-shadow: var(--shadow);
       touch-action: manipulation;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
       cursor: pointer;
     }
     .track-wrap canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
@@ -76,7 +79,8 @@
     const START_SPEED = 8;
     const SPEED_UP = 1.06;
     const MAX_SPEED = 20;
-    const SPRINT = 1.8;          // vitesse multipliée pendant un sprint (jusqu'à la prochaine haie)
+    const SPRINT = 1.8;
+    const LONG_PRESS_MS = 350;   // durée d'un appui long pour sprinter          // vitesse multipliée pendant un sprint (jusqu'à la prochaine haie)
     const VIEW_METERS = 40;      // hauteur de piste visible à l'écran
     const RUNNER_Y = 0.8;        // position verticale de la coureuse (fraction de la hauteur)
     const GRASS = 0.07;          // bande d'herbe de chaque côté
@@ -97,7 +101,7 @@
           <p class="rules">Une capitale s’affiche et chaque couloir porte le nom d’un pays.<br>
             Place la coureuse dans le couloir du <b>bon pays</b> avant la haie !<br>
             Bonne réponse : elle accélère. Mauvaise réponse : elle tombe et c’est fini.<br>
-            ⚡ <b>Sprint</b> : touche le nom d’un pays en haut (ou flèche ↑) pour foncer jusqu’à la haie.
+            ⚡ <b>Sprint</b> : appui long sur un couloir, touche le nom d’un pays en haut (ou flèche ↑) pour foncer jusqu’à la haie.
             Si c’est la bonne réponse, tu gagnes des <b>points bonus</b> : plus tu sprintes tôt, plus tu en gagnes !<br>
             📱 Touche un couloir &nbsp;·&nbsp; 💻 Flèches ← → ↑</p>
           <div id="settings"></div>
@@ -143,13 +147,21 @@
         flash: null, sprint: false, sprintLeft: 0, bonus: 0,
       };
 
-      $('#track').onpointerdown = (e) => {
+      const track = $('#track');
+      let holdTimer = 0;
+      const cancelHold = () => clearTimeout(holdTimer);
+      track.onpointerdown = (e) => {
         const r = cv.getBoundingClientRect();
         const trackX = r.width * GRASS, laneW = (r.width * (1 - 2 * GRASS)) / 3;
         setLane(Math.max(0, Math.min(2, Math.floor((e.clientX - r.left - trackX) / laneW))));
         // Toucher le nom d'un pays (en haut) = choisir ce couloir ET sprinter.
         if (e.clientY - r.top < LABEL_TOP + labelBoxH() + 6) sprint();
+        // Appui long sur un couloir = sprint aussi.
+        cancelHold();
+        holdTimer = setTimeout(sprint, LONG_PRESS_MS);
       };
+      track.onpointerup = track.onpointercancel = track.onpointerleave = cancelHold;
+      track.oncontextmenu = (e) => e.preventDefault();
 
       newQuestion();
       resizeObs = new ResizeObserver(resize);
