@@ -76,6 +76,7 @@
     const START_SPEED = 8;
     const SPEED_UP = 1.06;
     const MAX_SPEED = 20;
+    const SPRINT = 1.8;          // vitesse multipliée pendant un sprint (jusqu'à la prochaine haie)
     const VIEW_METERS = 40;      // hauteur de piste visible à l'écran
     const RUNNER_Y = 0.8;        // position verticale de la coureuse (fraction de la hauteur)
     const GRASS = 0.07;          // bande d'herbe de chaque côté
@@ -94,11 +95,13 @@
           <div class="big-emoji">🏃‍♀️</div>
           <h2>La course des capitales</h2>
           <p class="rules">Une capitale s’affiche et chaque couloir porte le nom d’un pays.<br>
-            Place la coureuse dans le couloir du <b>bon pays</b> avant la ligne !<br>
+            Place la coureuse dans le couloir du <b>bon pays</b> avant la haie !<br>
             Bonne réponse : elle accélère. Mauvaise réponse : elle tombe et c’est fini.<br>
-            📱 Touche un couloir &nbsp;·&nbsp; 💻 Flèches ← →</p>
+            ⚡ <b>Sprint</b> : touche le nom d’un pays en haut (ou flèche ↑) pour foncer jusqu’à la haie.
+            Si c’est la bonne réponse, tu gagnes des <b>points bonus</b> : plus tu sprintes tôt, plus tu en gagnes !<br>
+            📱 Touche un couloir &nbsp;·&nbsp; 💻 Flèches ← → ↑</p>
           <div id="settings"></div>
-          <p class="best">${best ? `🏆 Record : ${best} m` : ''}</p>
+          <p class="best">${best ? `🏆 Record : ${best} points` : ''}</p>
           <button class="btn primary big" id="go">Partez !</button>
           <p class="error-msg" id="err"></p>
         </section>`;
@@ -118,7 +121,7 @@
           <div class="run-body">
             <aside class="run-side">
               <div class="hud-item"><span class="lbl">📏 Distance</span><b id="dist">0 m</b></div>
-              <div class="hud-item"><span class="lbl">⚡ Vitesse</span><b id="spd">0 km/h</b></div>
+              <div class="hud-item"><span class="lbl">⚡ Bonus</span><b id="bonus">0</b></div>
               <div class="hud-item"><span class="lbl">🏆 Record</span><b id="rec"></b></div>
             </aside>
             <div class="track-col">
@@ -129,7 +132,7 @@
       cv = $('#cv');
       ctx = cv.getContext('2d');
       const best = Game.store.get('best:jeu3', 0);
-      $('#rec').textContent = best ? best + ' m' : '–';
+      $('#rec').textContent = best ? best + ' pts' : '–';
 
       S = {
         dist: 0, speed: 0, targetSpeed: START_SPEED,
@@ -137,13 +140,15 @@
         gateAt: FIRST_GATE, q: null, passed: [],
         phase: 'countdown', countdown: 3, fallT: 0, stepPhase: 0,
         correct: 0, review: [], best,
-        flash: null,
+        flash: null, sprint: false, sprintLeft: 0, bonus: 0,
       };
 
       $('#track').onpointerdown = (e) => {
         const r = cv.getBoundingClientRect();
         const trackX = r.width * GRASS, laneW = (r.width * (1 - 2 * GRASS)) / 3;
         setLane(Math.max(0, Math.min(2, Math.floor((e.clientX - r.left - trackX) / laneW))));
+        // Toucher le nom d'un pays (en haut) = choisir ce couloir ET sprinter.
+        if (e.clientY - r.top < LABEL_TOP + labelBoxH() + 6) sprint();
       };
 
       newQuestion();
@@ -188,10 +193,18 @@
       S.lane = i;
     }
 
+    // Sprint jusqu'à la prochaine haie. Le bonus = mètres restants au moment du sprint.
+    function sprint() {
+      if (!S || S.phase !== 'run' || S.sprint) return;
+      S.sprint = true;
+      S.sprintLeft = Math.max(0, S.q.at - S.dist);
+    }
+
     document.addEventListener('keydown', (e) => {
       if (!S) return;
       if (e.key === 'ArrowLeft') { setLane(Math.max(0, S.lane - 1)); e.preventDefault(); }
       else if (e.key === 'ArrowRight') { setLane(Math.min(2, S.lane + 1)); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { sprint(); e.preventDefault(); }
       else if (['1', '2', '3'].includes(e.key)) setLane(Number(e.key) - 1);
     });
 
@@ -200,7 +213,8 @@
         S.countdown -= dt;
         if (S.countdown <= 0) S.phase = 'run';
       } else if (S.phase === 'run') {
-        S.speed += (S.targetSpeed - S.speed) * Math.min(1, dt * 1.5);
+        const target = S.sprint ? S.targetSpeed * SPRINT : S.targetSpeed;
+        S.speed += (target - S.speed) * Math.min(1, dt * (S.sprint ? 4 : 1.5));
         S.dist += S.speed * dt;
         S.stepPhase += S.speed * dt * 1.6;
         if (S.dist >= S.gateAt) crossGate();
@@ -214,7 +228,7 @@
       if (S.flash) { S.flash.t -= dt; if (S.flash.t <= 0) S.flash = null; }
 
       $('#dist').textContent = Math.floor(S.dist) + ' m';
-      $('#spd').textContent = Math.round(S.speed * 3.6) + ' km/h';
+      $('#bonus').textContent = S.bonus;
     }
 
     function crossGate() {
@@ -222,10 +236,17 @@
       const ok = S.lane === q.correct;
       const result = { ...q, chosen: S.lane };
       S.passed.push(result);
+      const sprinted = S.sprint;
+      S.sprint = false; // la vitesse du sprint s'arrête à la haie
       if (ok) {
         S.correct++;
         S.targetSpeed = Math.min(MAX_SPEED, S.targetSpeed * SPEED_UP);
         S.flash = { text: 'Bravo ! ' + q.country.capital + ' → ' + q.country.name, color: '#1fb36b', t: 1.4 };
+        if (sprinted) {
+          const pts = Math.max(1, Math.round(S.sprintLeft));
+          S.bonus += pts;
+          S.flash.sub = '⚡ +' + pts + ' bonus';
+        }
         Game.Sound.play('good');
         S.gateAt += GATE_SPACING;
         newQuestion();
@@ -241,18 +262,23 @@
       S.phase = 'over';
       stopLoop();
       const distance = Math.floor(S.dist);
-      const record = distance > S.best;
-      if (record) Game.store.set('best:jeu3', distance);
+      const total = distance + S.bonus;
+      const record = total > S.best;
+      if (record) Game.store.set('best:jeu3', total);
       Game.Sound.play('end');
       const f = S.failed;
       app.innerHTML = `
         <section class="card">
           <div class="big-emoji">💥</div>
           <h2>Oups, la chute !</h2>
-          <div class="final-score">${distance}</div>
-          <div class="final-unit">mètres parcourus</div>
-          ${record ? '<div class="record">🏆 Nouveau record !</div>' : (S.best ? `<p class="best">🏆 Record : ${S.best} m</p>` : '')}
-          <div class="stats"><span>✅ ${S.correct} bonne${S.correct > 1 ? 's' : ''} réponse${S.correct > 1 ? 's' : ''}</span></div>
+          <div class="final-score">${total}</div>
+          <div class="final-unit">points</div>
+          ${record ? '<div class="record">🏆 Nouveau record !</div>' : (S.best ? `<p class="best">🏆 Record : ${S.best} points</p>` : '')}
+          <div class="stats">
+            <span>📏 ${distance} m</span>
+            <span>⚡ ${S.bonus} bonus</span>
+            <span>✅ ${S.correct} bonne${S.correct > 1 ? 's' : ''} réponse${S.correct > 1 ? 's' : ''}</span>
+          </div>
           <p class="fail-msg">🏛️ ${esc(f.country.capital)} → <b>${esc(f.country.name)}</b><br>
             Tu avais choisi : ${esc(f.options[f.chosen].name)}</p>
           <div class="btn-row"><button class="btn primary big" id="again">Rejouer</button></div>
@@ -317,16 +343,20 @@
       // Ligne de départ
       if (yOf(0) < H + 10) drawCheckered(trackX, yOf(0), trackW, 10);
 
-      // Portes déjà franchies puis porte actuelle
+      // Haies déjà franchies puis haie actuelle
       S.passed = S.passed.filter((g) => yOf(g.at) < H + 80);
-      S.passed.forEach((g) => drawGate(g, yOf(g.at), trackX, laneW, true));
-      if (S.phase !== 'fall') drawGate(S.q, yOf(S.q.at), trackX, laneW, false);
+      S.passed.forEach((g) => drawHurdles(g, yOf(g.at), trackX, laneW, true));
+      if (S.phase !== 'fall') drawHurdles(S.q, yOf(S.q.at), trackX, laneW, false);
 
       // Coureuse
       const size = Math.min(laneW * 0.42, 64);
       const rx = trackX + (S.laneX + 0.5) * laneW;
       const fall = S.phase === 'fall' ? Math.min(1, S.fallT / 0.35) : 0;
-      drawRunner(rx, runnerY, size, S.stepPhase, fall);
+      if (S.sprint) drawSpeedLines(rx, runnerY, size);
+      drawRunner(rx, runnerY, size * jumpScale(), S.stepPhase, fall);
+
+      // Noms des pays, fixes en haut de l'écran
+      drawLabels(S.phase === 'fall' ? S.failed : S.q, trackX, laneW, S.phase === 'fall');
 
       // Compte à rebours
       if (S.phase === 'countdown') {
@@ -335,7 +365,8 @@
       }
       if (S.flash) {
         ctx.globalAlpha = Math.min(1, S.flash.t * 2);
-        bigText(S.flash.text, W / 2, H * 0.12, Math.min(26, W / 16), S.flash.color);
+        bigText(S.flash.text, W / 2, H * 0.3, Math.min(26, W / 16), S.flash.color);
+        if (S.flash.sub) bigText(S.flash.sub, W / 2, H * 0.3 + 36, Math.min(30, W / 13), '#ffd23f');
         ctx.globalAlpha = 1;
       }
       if (S.phase === 'fall') {
@@ -366,23 +397,80 @@
       }
     }
 
-    // Une porte = un panneau par couloir avec le nom du pays ; la réponse est vérifiée au bas des panneaux.
-    function drawGate(g, y, trackX, laneW, passed) {
-      if (y < -80 || y > H + 80) return;
-      const boxH = Math.max(42, Math.min(70, H * 0.1));
+    // Petit saut : la coureuse grossit un peu en passant au-dessus d'une haie.
+    function jumpScale() {
+      const hurdles = [S.q.at].concat(S.passed.filter((g) => g.chosen === g.correct).map((g) => g.at));
+      for (const at of hurdles) {
+        const d = S.dist - at + 1.5;
+        if (d > 0 && d < 3 && (S.phase !== 'fall' || S.dist < at)) return 1 + 0.3 * Math.sin((Math.PI * d) / 3);
+      }
+      return 1;
+    }
+
+    // Une haie par couloir (vue de dessus) : deux poteaux et une barre rayée de la couleur du couloir.
+    function drawHurdles(g, y, trackX, laneW, passed) {
+      if (y < -40 || y > H + 40) return;
+      const barH = Math.max(7, Math.min(12, H * 0.015));
+      for (let i = 0; i < 3; i++) {
+        let color = LANE_COLORS[i];
+        if (passed) color = i === g.correct ? '#1fb36b' : (i === g.chosen ? '#ec4747' : '#9aa0b8');
+        const x = trackX + i * laneW + laneW * 0.12;
+        const w = laneW * 0.76;
+        // ombre
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        ctx.fillRect(x + 3, y - barH / 2 + 5, w, barH);
+        // barre blanche à rayures
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(x, y - barH / 2, w, barH);
+        ctx.fillStyle = color;
+        const n = 5;
+        for (let k = 0; k < n; k += 2) ctx.fillRect(x + (k * w) / n, y - barH / 2, w / n, barH);
+        ctx.strokeStyle = 'rgba(31,37,71,0.5)';
+        ctx.lineWidth = 1;
+        ctx.strokeRect(x, y - barH / 2, w, barH);
+        // poteaux
+        ctx.fillStyle = '#3a3f5c';
+        const post = barH * 0.9;
+        ctx.fillRect(x - post / 2, y - post / 2 + barH * 0.9, post, post);
+        ctx.fillRect(x + w - post / 2, y - post / 2 + barH * 0.9, post, post);
+      }
+    }
+
+    // Traînées blanches derrière la coureuse pendant un sprint.
+    function drawSpeedLines(x, y, s) {
+      const t = performance.now() / 60;
+      ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      [-0.35, 0, 0.35].forEach((dx, i) => {
+        const len = s * (0.8 + 0.4 * Math.sin(t + i * 2));
+        ctx.beginPath();
+        ctx.moveTo(x + dx * s, y + s * 0.55);
+        ctx.lineTo(x + dx * s, y + s * 0.55 + len);
+        ctx.stroke();
+      });
+    }
+
+    const LABEL_TOP = 8;
+    const labelBoxH = () => Math.max(42, Math.min(70, H * 0.1));
+
+    // Les 3 pays affichés en haut de chaque couloir (les toucher déclenche le sprint).
+    function drawLabels(g, trackX, laneW, passed) {
+      const boxH = labelBoxH();
+      const top = LABEL_TOP;
       for (let i = 0; i < 3; i++) {
         let color = LANE_COLORS[i];
         if (passed) color = i === g.correct ? '#1fb36b' : (i === g.chosen ? '#ec4747' : '#9aa0b8');
         const x = trackX + i * laneW + 4;
         const w = laneW - 8;
-        const top = y - boxH;
         roundRect(x, top, w, boxH, 8);
         ctx.fillStyle = color;
         ctx.fill();
-        ctx.strokeStyle = 'rgba(255,255,255,0.9)';
-        ctx.lineWidth = 2;
+        const sprinting = !passed && S.sprint && i === S.lane;
+        ctx.strokeStyle = sprinting ? '#ffd23f' : 'rgba(255,255,255,0.9)';
+        ctx.lineWidth = sprinting ? 5 : 2;
         ctx.stroke();
-        const { lines, size } = fitText(g.options[i].name, w - 8, boxH - 6, 18);
+        const { lines, size } = fitText((sprinting ? '⚡' : '') + g.options[i].name, w - 8, boxH - 6, 18);
         ctx.fillStyle = '#fff';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
