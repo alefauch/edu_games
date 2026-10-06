@@ -112,7 +112,7 @@
         reveal.className = 'answer-reveal ' + (ok ? 'good' : 'bad');
         reveal.innerHTML = !ok ? '❌ C’était : ' + esc(c.name)
           : guess && guess !== c
-            ? '✅ Bravo ! C’était ' + esc(c.name) + ', qui a presque le même drapeau que ' + esc(guess.name) + '.'
+            ? '✅ Bravo ! Ici c’était ' + esc(c.name) + ' : ' + esc(c.name) + ' et ' + esc(guess.name) + ' ont presque le même drapeau.'
             : '✅ Bravo, c’est ' + esc(c.name) + ' !';
         done(ok, { left: miniFlag(c), right: esc(c.name) });
       }
