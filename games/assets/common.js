@@ -79,7 +79,7 @@
   // Petits sons générés (pas de fichiers audio).
   const Sound = {
     ctx: null,
-    muted: store.get('muted', false),
+    muted: store.get('muted', true),
     play(type) {
       if (this.muted) return;
       try {
