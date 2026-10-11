@@ -123,22 +123,42 @@
     paint();
   }
 
-  // Boutons de choix des continents. Renvoie une fonction qui donne la sélection.
+  // Sélection exclusive de l'UE ou sélection multiple des continents.
   function regionPicker(container, regions = Data.REGIONS, storageKey = 'regions') {
-    let selected = store.get(storageKey, regions.map((r) => r.key));
-    container.insertAdjacentHTML('beforeend', '<p class="setting-label">Continents</p><div class="chips"></div>');
+    const continentKeys = regions.map((r) => r.key);
+    const saved = store.get(storageKey, continentKeys);
+    let selected = Array.isArray(saved) ? saved.filter((k) => k === 'UE' || continentKeys.includes(k)) : continentKeys;
+    if (selected.includes('UE')) selected = ['UE'];
+    container.insertAdjacentHTML('beforeend', '<p class="setting-label">Zones géographiques</p><div class="chips"></div>');
     const chips = container.querySelector('.chips');
-    regions.forEach((r) => {
+    const options = [{ key: 'UE', emoji: '🇪🇺', label: 'Union européenne' }, ...regions];
+    const buttons = [];
+    const paint = () => buttons.forEach((b) => {
+      const on = selected.includes(b.dataset.key);
+      b.classList.toggle('on', on);
+      b.setAttribute('aria-pressed', String(on));
+    });
+    options.forEach((r) => {
       const b = document.createElement('button');
-      b.className = 'chip' + (selected.includes(r.key) ? ' on' : '');
-      b.textContent = r.emoji + ' ' + r.key;
+      b.className = 'chip';
+      b.dataset.key = r.key;
+      b.textContent = r.emoji + ' ' + (r.label || r.key);
       b.onclick = () => {
-        selected = selected.includes(r.key) ? selected.filter((k) => k !== r.key) : selected.concat(r.key);
-        b.classList.toggle('on', selected.includes(r.key));
+        if (r.key === 'UE') {
+          selected = selected.includes('UE') ? [] : ['UE'];
+        } else {
+          const continents = selected.filter((k) => k !== 'UE');
+          selected = continents.includes(r.key)
+            ? continents.filter((k) => k !== r.key)
+            : continents.concat(r.key);
+        }
         store.set(storageKey, selected);
+        paint();
       };
       chips.appendChild(b);
+      buttons.push(b);
     });
+    paint();
     return () => selected;
   }
 
