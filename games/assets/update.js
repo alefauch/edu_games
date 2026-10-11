@@ -31,8 +31,8 @@
       if (!response.ok) return;
       const latest = await response.json();
       if (!latest.version || latest.version === build.version) return;
-      pending = true;
-      if (mainPage) location.reload();
+      pending = latest.version;
+      if (mainPage) refresh(latest.version);
       else banner.style.display = 'block'; // Ne jamais interrompre une partie.
     } catch (_) { /* hors ligne : on réessaiera */ }
   }
