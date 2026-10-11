@@ -25,6 +25,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/configure-pages@v5
+      - name: Stamp build and version all local assets
+        env:
+          BUILD_SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import datetime, json, os, pathlib, re
+          root = pathlib.Path('games')
+          version = os.environ['BUILD_SHA']
+          built_at = datetime.datetime.now(datetime.timezone.utc).isoformat()
+          info = {'version': version, 'builtAt': built_at}
+          (root / 'version.json').write_text(json.dumps(info), encoding='utf-8')
+          for html in root.glob('*.html'):
+              contents = html.read_text(encoding='utf-8')
+              # Use new URLs for each deployment so browsers cannot reuse stale CSS/JS.
+              contents = re.sub(r'((?:src|href)="(?!https?:|#)(?:assets/)[^"?]+)(\")',
+                                lambda m: m.group(1) + '?v=' + version + m.group(2), contents)
+              contents = contents.replace('</head>', '<script>window.BUILD_INFO=' + json.dumps(info) + ';</script>\n</head>')
+              contents = contents.replace('</body>', '<script src="assets/update.js?v=' + version + '"></script>\n</body>')
+              html.write_text(contents, encoding='utf-8')
+          PY
       - uses: actions/upload-pages-artifact@v3
         with:
           path: games
