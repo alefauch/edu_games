@@ -133,6 +133,15 @@
   const COUNTRIES = RAW.map(([code, name, capital, region, weight]) => ({ code, name, capital, region, weight }));
   const BY_CODE = Object.fromEntries(COUNTRIES.map((c) => [c.code, c]));
 
+  // Les 27 États membres de l'Union européenne (codes ISO à deux lettres).
+  const EU_CODES = new Set([
+    'at', 'be', 'bg', 'hr', 'cy', 'cz', 'dk', 'ee', 'fi',
+    'fr', 'de', 'gr', 'hu', 'ie', 'it', 'lv', 'lt', 'lu',
+    'mt', 'nl', 'pl', 'pt', 'ro', 'sk', 'si', 'es', 'se',
+  ]);
+  const matchesRegion = (country, regions) =>
+    regions.includes(country.region) || (regions.includes('UE') && EU_CODES.has(country.code));
+
   // Continents proposés dans les jeux de capitales.
   const REGIONS = [
     { key: 'Europe', emoji: '🏰' },
@@ -181,9 +190,9 @@
     FLAG_REGIONS,
     ALIASES,
     byCode: (code) => BY_CODE[code],
-    capitalPool: (regions) => COUNTRIES.filter((c) => regions.includes(c.region)),
+    capitalPool: (regions) => COUNTRIES.filter((c) => matchesRegion(c, regions)),
     flagPool: (regions) => COUNTRIES.filter((c) => (c.region === 'Europe' || MAJOR_FLAGS.includes(c.code)) &&
-      (!regions || regions.includes(c.region))),
+      (!regions || matchesRegion(c, regions))),
     flagSrc: (c) => 'flags/' + c.code + '.svg',
     areLookalikes: (a, b) => LOOKALIKES.some((p) => p.includes(a.code) && p.includes(b.code)),
     sameFlag: (a, b) => a === b || IDENTICAL.some((p) => p.includes(a.code) && p.includes(b.code)),
