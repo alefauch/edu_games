@@ -24,7 +24,7 @@ Ils sont pensés pour un enfant d'environ 8 ans et se jouent aussi bien sur ordi
 
 ### Réglages
 
-- **Zones géographiques** : les continents habituels (Europe, Asie, Amérique, Afrique, et Océanie pour les drapeaux) ou **Union européenne** (27 pays). Le filtre UE est exclusif ; les continents restent combinables.
+- **Zones géographiques** : les continents habituels (Europe, Asie, Amérique, Afrique, et Océanie pour les drapeaux) ou **Union européenne** (27 pays). Le filtre UE peut être sélectionné seul ou combiné avec les continents ; chaque pays n'apparaît qu'une fois dans la sélection.
 - **Difficulté** pour les jeux de drapeaux.
 - Les **records** sont enregistrés dans le navigateur, sur l'appareil utilisé.
 
