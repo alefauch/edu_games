@@ -193,7 +193,7 @@
     capitalPool: (regions) => COUNTRIES.filter((c) => matchesRegion(c, regions)),
     flagPool: (regions) => COUNTRIES.filter((c) => (c.region === 'Europe' || MAJOR_FLAGS.includes(c.code)) &&
       (!regions || matchesRegion(c, regions))),
-    flagSrc: (c) => 'flags/' + c.code + '.svg',
+    flagSrc: (c) => 'flags/' + c.code + '.svg' + (window.BUILD_INFO ? '?v=' + window.BUILD_INFO.version : ''),
     areLookalikes: (a, b) => LOOKALIKES.some((p) => p.includes(a.code) && p.includes(b.code)),
     sameFlag: (a, b) => a === b || IDENTICAL.some((p) => p.includes(a.code) && p.includes(b.code)),
     regionEmoji: (r) => (FLAG_REGIONS.find((x) => x.key === r) || { emoji: '🌏' }).emoji,
