@@ -147,7 +147,7 @@
       modeKey: () => getLevel(),
       prepare() {
         pool = Data.flagPool(getRegions());
-        if (!pool.length) return 'Choisis au moins un continent !';
+        if (!pool.length) return 'Choisis au moins une zone géographique !';
         pick = Game.makePicker(pool);
         Game.preloadFlags(pool);
       },
