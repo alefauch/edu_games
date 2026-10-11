@@ -3,12 +3,12 @@
   const build = window.BUILD_INFO;
   if (!build || !build.version) return;
   const mainPage = /\/(?:index\.html)?$/.test(location.pathname);
-  let pending = false;
+  let pending = null;
   const banner = document.createElement('aside');
   banner.id = 'update-banner';
   banner.style.cssText = 'display:none;position:fixed;bottom:12px;left:12px;right:12px;max-width:560px;margin:auto;z-index:9999;background:#fff;border:2px solid #4f6bff;border-radius:12px;padding:12px;box-shadow:0 4px 20px #0003;text-align:center';
   banner.innerHTML = '<span>Une nouvelle version est disponible. </span><button type="button" class="btn primary">Actualiser</button>';
-  banner.querySelector('button').addEventListener('click', () => location.reload());
+  const refresh = (version) => {\n    const url = new URL(location.href);\n    url.searchParams.set('v', version);\n    location.replace(url.href);\n  };\n  banner.querySelector('button').addEventListener('click', () => refresh(pending));
   document.body.appendChild(banner);
 
   const label = document.getElementById('build-info');
