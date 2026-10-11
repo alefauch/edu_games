@@ -116,7 +116,7 @@
     // ---------- Partie ----------
     function start() {
       pool = Data.capitalPool(getRegions());
-      if (pool.length < 3) { $('#err').textContent = 'Choisis au moins un continent !'; return; }
+      if (pool.length < 3) { $('#err').textContent = 'Choisis au moins une zone géographique !'; return; }
       pick = Game.makePicker(pool);
 
       app.innerHTML = `
