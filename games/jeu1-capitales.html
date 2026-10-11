@@ -32,7 +32,7 @@
       renderSettings(el) { getRegions = Game.regionPicker(el); },
       prepare() {
         pool = Data.capitalPool(getRegions());
-        if (pool.length < 3) return 'Choisis au moins un continent !';
+        if (pool.length < 3) return 'Choisis au moins une zone géographique !';
         pick = Game.makePicker(pool);
       },
       ask(stage, done) {
