@@ -123,12 +123,11 @@
     paint();
   }
 
-  // Sélection exclusive de l'UE ou sélection multiple des continents.
+  // Sélection multiple des continents et de l'UE (union des pays, sans doublons).
   function regionPicker(container, regions = Data.REGIONS, storageKey = 'regions') {
     const continentKeys = regions.map((r) => r.key);
     const saved = store.get(storageKey, continentKeys);
     let selected = Array.isArray(saved) ? saved.filter((k) => k === 'UE' || continentKeys.includes(k)) : continentKeys;
-    if (selected.includes('UE')) selected = ['UE'];
     container.insertAdjacentHTML('beforeend', '<p class="setting-label">Zones géographiques</p><div class="chips"></div>');
     const chips = container.querySelector('.chips');
     const options = [{ key: 'UE', emoji: '🇪🇺', label: 'Union européenne' }, ...regions];
@@ -144,14 +143,9 @@
       b.dataset.key = r.key;
       b.textContent = r.emoji + ' ' + (r.label || r.key);
       b.onclick = () => {
-        if (r.key === 'UE') {
-          selected = selected.includes('UE') ? [] : ['UE'];
-        } else {
-          const continents = selected.filter((k) => k !== 'UE');
-          selected = continents.includes(r.key)
-            ? continents.filter((k) => k !== r.key)
-            : continents.concat(r.key);
-        }
+        selected = selected.includes(r.key)
+          ? selected.filter((k) => k !== r.key)
+          : selected.concat(r.key);
         store.set(storageKey, selected);
         paint();
       };
